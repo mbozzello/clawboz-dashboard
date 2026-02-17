@@ -141,6 +141,12 @@ export function MissionHub() {
       const res = await fetch('/api/missions/generate', { method: 'POST' })
       const data = await res.json()
       setGenOutput(data.output || data.errors || 'Done')
+
+      if (data.errors && !data.success) {
+        // Show error but don't try to reload missions
+        return
+      }
+
       await fetchList()
 
       // auto-open the newest mission
