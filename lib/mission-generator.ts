@@ -5,8 +5,32 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import fs from 'fs'
+import path from 'path'
 import { TrendSource } from './trend-fetcher'
 import { GITHUB_USERNAME, DATA_REPO, DATA_BRANCH } from './config'
+
+/**
+ * Load API key — process.env first, then .env.local fallback.
+ * Turbopack sometimes doesn't inject .env.local into server routes.
+ */
+function getAnthropicKey(): string | undefined {
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY
+
+  // Fallback: read .env.local directly
+  try {
+    const envPath = path.join(process.cwd(), '.env.local')
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8')
+      for (const line of content.split('\n')) {
+        const match = line.match(/^ANTHROPIC_API_KEY=(.+)/)
+        if (match) return match[1].trim()
+      }
+    }
+  } catch {}
+
+  return undefined
+}
 
 export interface GeneratedMission {
   title: string
@@ -44,9 +68,9 @@ export async function generateMissionsFromTrends(
   count: number = 3
 ): Promise<{ missions: GeneratedMission[]; markdown: string }> {
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = getAnthropicKey()
   if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY not set. Add it to your Vercel environment variables or local .env file.')
+    throw new Error('ANTHROPIC_API_KEY not configured. Add it to Vercel Environment Variables (Settings → Environment Variables) or to your local .env file.')
   }
 
   const client = new Anthropic({ apiKey })

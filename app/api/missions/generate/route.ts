@@ -67,7 +67,9 @@ export async function POST() {
 
     let errorMsg = error.message || String(error)
     if (errorMsg.includes('ANTHROPIC_API_KEY')) {
-      errorMsg = 'ANTHROPIC_API_KEY not configured. Add it to Vercel Environment Variables (Settings → Environment Variables) or to your local .env file.'
+      errorMsg = 'ANTHROPIC_API_KEY not configured. Add it to Vercel Environment Variables (Settings → Environment Variables) or to your local .env.local file.'
+    } else if (errorMsg.includes('credit balance')) {
+      errorMsg = 'Your Anthropic API account needs credits. Go to https://console.anthropic.com/settings/billing to add credits, then try again.'
     }
 
     return NextResponse.json({
