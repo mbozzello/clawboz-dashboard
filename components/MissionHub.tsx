@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { MissionCompleters } from './MissionCompleters'
 import { MissionComments } from './MissionComments'
 import { VoteButtons } from './VoteButtons'
@@ -173,7 +173,7 @@ export function MissionHub() {
 
   /* ---------- derived flat list ---------- */
 
-  const filteredRows = (() => {
+  const filteredRows = useMemo(() => {
     let rows = search.trim()
       ? skillRows.filter(row => {
           const q = search.toLowerCase()
@@ -186,11 +186,12 @@ export function MissionHub() {
       : [...skillRows]
 
     if (sortTab === 'popular') {
+      // Sort by net votes descending; ties stay in latest order
       rows = rows.slice().sort((a, b) => b.net - a.net)
     }
     // latest = already in reverse-chron order from API
     return rows
-  })()
+  }, [skillRows, sortTab, search])
 
   /* ------------------------------------------------------------------ */
   /* RENDER — list view                                                  */
