@@ -94,27 +94,28 @@ Each mission MUST:
 5. Be something you can tell Claude Code to build step-by-step
 
 For each mission, return a JSON object with:
-- title: "Build X to Do Y" format (concise, exciting)
-- description: One compelling sentence
+- title: "Build X to Do Y" format (concise, max 60 chars)
+- description: One sentence (max 100 chars)
 - time_estimate: e.g. "30-45 minutes"
 - difficulty: "beginner" | "intermediate" | "advanced"
-- tools: Array of specific tools/packages needed
-- what_youll_build: 4 concrete deliverables
-- prerequisites: 2-3 things needed to start
-- steps: Array of 4-5 steps, each with:
-  - title: Step name
-  - description: What you're doing
-  - commands: Array of real bash commands to run
-  - checklist: Array of 3 things to verify this step worked
-- success_criteria: 4 checkboxes for overall completion
-- next_steps: 3-4 ways to extend the project
-- inspiration_source: Which trend/source inspired this
+- tools: Array of 2-3 tools
+- what_youll_build: 3 short bullet points
+- prerequisites: 2 items
+- steps: Array of 3-4 steps, each with:
+  - title: Short step name
+  - description: One sentence
+  - commands: 3-5 real bash commands
+  - checklist: 2-3 short verification items
+- success_criteria: 3 short checkboxes
+- next_steps: 2-3 short ideas
+- inspiration_source: Which trend inspired this
 
-Return ONLY a JSON array. No markdown, no explanation, no code fences.`
+IMPORTANT: Keep all strings SHORT to avoid truncation. No long paragraphs.
+Return ONLY a valid JSON array. No markdown, no explanation, no code fences.`
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
@@ -133,12 +134,70 @@ Return ONLY a JSON array. No markdown, no explanation, no code fences.`
     responseText = responseText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
   }
 
-  const missions: GeneratedMission[] = JSON.parse(responseText)
+  // Robust JSON parsing — handle truncated responses
+  let missions: GeneratedMission[]
+  try {
+    missions = JSON.parse(responseText)
+  } catch (parseError) {
+    // Try to recover truncated JSON by closing open structures
+    missions = repairAndParseJSON(responseText)
+    if (missions.length === 0) {
+      throw new Error(`Failed to parse AI response: ${(parseError as Error).message}`)
+    }
+    console.warn(`Recovered ${missions.length} missions from truncated JSON`)
+  }
 
   // Generate markdown
   const markdown = buildMarkdown(missions)
 
   return { missions, markdown }
+}
+
+/**
+ * Attempt to recover valid missions from truncated JSON.
+ * Strategy: find complete mission objects within the array.
+ */
+function repairAndParseJSON(text: string): GeneratedMission[] {
+  const missions: GeneratedMission[] = []
+
+  // Find each top-level object in the array by brace matching
+  let depth = 0
+  let objectStart = -1
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+
+    // Skip strings
+    if (ch === '"') {
+      i++
+      while (i < text.length && text[i] !== '"') {
+        if (text[i] === '\\') i++ // skip escaped chars
+        i++
+      }
+      continue
+    }
+
+    if (ch === '{') {
+      if (depth === 0) objectStart = i
+      depth++
+    } else if (ch === '}') {
+      depth--
+      if (depth === 0 && objectStart >= 0) {
+        const objectStr = text.substring(objectStart, i + 1)
+        try {
+          const obj = JSON.parse(objectStr)
+          if (obj.title && obj.steps) {
+            missions.push(obj)
+          }
+        } catch {
+          // This object was malformed, skip it
+        }
+        objectStart = -1
+      }
+    }
+  }
+
+  return missions
 }
 
 function buildMarkdown(missions: GeneratedMission[]): string {
