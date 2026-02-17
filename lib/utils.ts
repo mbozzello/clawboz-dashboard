@@ -18,6 +18,15 @@ export function formatRelativeTime(timestamp: string): string {
   return `${Math.floor(seconds / 2592000)}mo ago`
 }
 
+/** Deterministic avatar background color based on first character of handle */
+export function avatarColor(handle: string): string {
+  const colors = [
+    'bg-violet-500', 'bg-indigo-500', 'bg-blue-500', 'bg-emerald-500',
+    'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-teal-500',
+  ]
+  return colors[handle.charCodeAt(0) % colors.length]
+}
+
 export function getStatusColor(status: string): string {
   const statusLower = status.toLowerCase()
 

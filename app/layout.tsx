@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { UserIdentityProvider } from "@/components/UserIdentityProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClawBoz HQ Dashboard",
-  description: "Real-time monitoring of agents and projects",
+  title: "Launchpad",
+  description: "Hands-on AI skills for product managers. Learn by building.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <UserIdentityProvider>
+          {children}
+        </UserIdentityProvider>
       </body>
     </html>
   );
