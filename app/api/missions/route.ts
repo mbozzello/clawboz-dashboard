@@ -76,9 +76,11 @@ function parseMeta(filename: string, content: string) {
 
   const slugs = titles.map(t => `${date}-${slugify(t)}`)
 
-  // Extract a short description and difficulty from each mission section
+  // Extract a short description, difficulty, and source from each mission section
   const descriptions: string[] = []
   const difficulties: string[] = []
+  const sources: string[] = []
+  const sourceUrls: string[] = []
   const missionSections = content.split(/^## Mission \d+:/gm).slice(1)
   for (const section of missionSections) {
     // Description: first non-empty line after "What You're Building"
@@ -92,7 +94,26 @@ function parseMeta(filename: string, content: string) {
     // Difficulty: extract from **📊 Difficulty:** line
     const diffMatch = section.match(/\*\*.*?Difficulty:?\*\*\s*(.+)/i)
     difficulties.push(diffMatch ? diffMatch[1].trim() : '')
+    // Source: parse "*Inspired by: [Label](url)*" or "*Inspired by: Label - desc*"
+    const srcRaw = section.match(/\*Inspired by:\s*([\s\S]*?)\*/)
+    if (srcRaw) {
+      const inner = srcRaw[1].trim()
+      // Check for markdown link format: [label](url)
+      const mdLink = inner.match(/^\[([^\]]+)\]\(([^)]+)\)/)
+      if (mdLink) {
+        sources.push(mdLink[1].trim())
+        sourceUrls.push(mdLink[2].trim())
+      } else {
+        // Plain text: "Label - description" — take just the label part
+        const label = inner.replace(/\s*-[^-].*$/, '').trim()
+        sources.push(label)
+        sourceUrls.push('')
+      }
+    } else {
+      sources.push('')
+      sourceUrls.push('')
+    }
   }
 
-  return { date, lessonCount, titles, slugs, descriptions, difficulties }
+  return { date, lessonCount, titles, slugs, descriptions, difficulties, sources, sourceUrls }
 }

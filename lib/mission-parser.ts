@@ -173,6 +173,32 @@ function parseSource(body: string): ParsedSource | null {
     return { label: 'X', url: `https://x.com/search?q=${encodeURIComponent(term)}&src=typed_query` }
   }
 
+  // Named PM/blog sources with " - description" suffix
+  // e.g. "Lenny's Newsletter - RICE scoring and ruthless prioritization frameworks"
+  //      "Product Talk - Teresa Torres on continuous discovery"
+  //      "Mind the Product - stakeholder communication"
+  //      "Reforge - competitive intelligence as a core PM practice"
+  //      "Product Coalition - strategy, feature prioritization"
+  //      "Claude Code MCP SDK documentation - building persistent tools"
+  const knownSources: Record<string, string> = {
+    "lenny's newsletter": 'https://www.lennysnewsletter.com/',
+    'lennys newsletter': 'https://www.lennysnewsletter.com/',
+    'product talk': 'https://www.producttalk.org/',
+    'mind the product': 'https://www.mindtheproduct.com/',
+    'reforge': 'https://www.reforge.com/blog',
+    'product coalition': 'https://productcoalition.com/',
+    'claude code mcp sdk': 'https://docs.anthropic.com/en/docs/claude-code/mcp',
+    'indie hackers': 'https://www.indiehackers.com/',
+    'x (twitter)': 'https://x.com/',
+  }
+  const knownSourceMatch = raw.match(/^(.+?)\s*-\s*.+$/)
+  if (knownSourceMatch) {
+    const name = knownSourceMatch[1].trim()
+    const key = name.toLowerCase()
+    const url = Object.entries(knownSources).find(([k]) => key.includes(k))?.[1]
+    return { label: name, url: url || `https://www.google.com/search?q=${encodeURIComponent(name)}` }
+  }
+
   // Bare owner/repo pattern (with optional " - description" suffix)
   // e.g. "ruvnet/wifi-densepose - WiFi-based human pose estimation"
   const bareRepoMatch = raw.match(/^([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\s*-\s*.+)?$/)

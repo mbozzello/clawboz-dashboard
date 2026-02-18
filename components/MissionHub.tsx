@@ -15,6 +15,8 @@ interface MissionListItem {
   slugs: string[]
   descriptions: string[]
   difficulties: string[]
+  sources: string[]
+  sourceUrls: string[]
 }
 
 /** Flat individual skill row for the list view */
@@ -25,6 +27,8 @@ interface SkillRow {
   title: string
   description: string
   difficulty: string
+  source: string
+  sourceUrl: string
   /** net vote score cached from API for Popular sort */
   net: number
 }
@@ -67,6 +71,8 @@ export function MissionHub() {
             title: m.titles[i] || `Skill ${i + 1}`,
             description: m.descriptions[i] || '',
             difficulty: m.difficulties?.[i] || '',
+            source: m.sources?.[i] || '',
+            sourceUrl: m.sourceUrls?.[i] || '',
             net: 0,
           })
         }
@@ -289,7 +295,27 @@ export function MissionHub() {
               {row.description && (
                 <p className="text-xs text-gray-500 leading-relaxed truncate">{row.description}</p>
               )}
-              <p className="text-xs text-gray-400 mt-0.5">{row.date}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {row.date}
+                {row.source && (
+                  <span className="ml-1.5 text-gray-300">·</span>
+                )}
+                {row.source && (
+                  row.sourceUrl ? (
+                    <a
+                      href={row.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="ml-1.5 text-gray-400 italic hover:text-blue-400 transition-colors"
+                    >
+                      {row.source}
+                    </a>
+                  ) : (
+                    <span className="ml-1.5 text-gray-400 italic">{row.source}</span>
+                  )
+                )}
+              </p>
             </button>
 
             {/* Chevron */}
