@@ -63,12 +63,18 @@ async function listFromGitHub() {
 
 /* -------- shared -------- */
 
+function slugify(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
 function parseMeta(filename: string, content: string) {
   const date = filename.replace('.md', '')
   const lessonCount = (content.match(/^## Mission \d+:/gm) || []).length
   const titles: string[] = []
   const titleMatches = content.matchAll(/^## Mission \d+: (.+)$/gm)
   for (const m of titleMatches) titles.push(m[1].trim())
+
+  const slugs = titles.map(t => `${date}-${slugify(t)}`)
 
   // Extract a short description from each mission's "What You're Building" section
   const descriptions: string[] = []
@@ -85,5 +91,5 @@ function parseMeta(filename: string, content: string) {
     }
   }
 
-  return { date, lessonCount, titles, descriptions }
+  return { date, lessonCount, titles, slugs, descriptions }
 }

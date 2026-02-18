@@ -58,6 +58,7 @@ interface ParsedSource {
 interface ParsedMission {
   index: number
   title: string
+  slug: string
   timeEstimate: string
   difficulty: string
   tools: string
@@ -68,6 +69,10 @@ interface ParsedMission {
   steps: ParsedStep[]
   successCriteria: string[]
   nextSteps: string[]
+}
+
+function slugify(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 function parseMissionMarkdown(content: string, date: string) {
@@ -95,7 +100,7 @@ function parseMissionMarkdown(content: string, date: string) {
     const nextSteps = bulletList(body, '### 🐰 Next Steps', '---')
 
     missions.push({
-      index, title, timeEstimate, difficulty, tools,
+      index, title, slug: `${date}-${slugify(title)}`, timeEstimate, difficulty, tools,
       description, source, youllBuild, prerequisites, steps,
       successCriteria, nextSteps,
     })
@@ -133,18 +138,19 @@ function parseSource(body: string): ParsedSource | null {
 
   const raw = m[1].trim()
 
-  // HackerNews: <title>
+  // HackerNews: <title> — use Google to search HN for more reliable results
   const hnMatch = raw.match(/^HackerNews:\s*(.+)$/i)
   if (hnMatch) {
     const title = hnMatch[1].trim()
-    return { label: 'HackerNews', url: `https://hn.algolia.com/?q=${encodeURIComponent(title)}` }
+    return { label: 'HackerNews', url: `https://www.google.com/search?q=site:news.ycombinator.com+${encodeURIComponent(title)}` }
   }
 
-  // GitHub Trending: owner/repo
+  // GitHub Trending: owner/repo — validate it looks like owner/repo before linking directly
   const ghMatch = raw.match(/^GitHub Trending:\s*(.+)$/i)
   if (ghMatch) {
     const repo = ghMatch[1].trim()
-    return { label: 'GitHub', url: `https://github.com/${repo}` }
+    const isOwnerRepo = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)
+    return { label: 'GitHub', url: isOwnerRepo ? `https://github.com/${repo}` : 'https://github.com/trending' }
   }
 
   // Product Hunt: name
@@ -158,7 +164,7 @@ function parseSource(body: string): ParsedSource | null {
   const xMatch = raw.match(/^X:\s*(.+)$/i)
   if (xMatch) {
     const term = xMatch[1].trim()
-    return { label: 'X', url: `https://x.com/search?q=${encodeURIComponent(term)}` }
+    return { label: 'X', url: `https://x.com/search?q=${encodeURIComponent(term)}&src=typed_query` }
   }
 
   // Fallback — just show the raw text as label, no link
