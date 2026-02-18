@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { isLocal, getMissionsGitHubDir } from '@/lib/config'
 
-const LOCAL_MISSIONS_DIR = path.join(process.env.HOME || '', 'ClawBoz', 'clawboz-trend-coach', 'outputs', 'missions')
+const LOCAL_MISSIONS_DIR = path.join(process.env.HOME || '', 'ClawBoz', 'clawboz-hq-data', 'missions')
 
 // GET /api/missions — list every mission pack
 export async function GET() {

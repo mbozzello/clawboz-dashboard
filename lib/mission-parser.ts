@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { isLocal, getMissionRawUrl } from './config'
 
-const LOCAL_MISSIONS_DIR = path.join(process.env.HOME || '', 'ClawBoz', 'clawboz-trend-coach', 'outputs', 'missions')
+const LOCAL_MISSIONS_DIR = path.join(process.env.HOME || '', 'ClawBoz', 'clawboz-hq-data', 'missions')
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
