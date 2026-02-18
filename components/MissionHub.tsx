@@ -14,6 +14,7 @@ interface MissionListItem {
   titles: string[]
   slugs: string[]
   descriptions: string[]
+  difficulties: string[]
 }
 
 /** Flat individual skill row for the list view */
@@ -23,11 +24,15 @@ interface SkillRow {
   slug: string
   title: string
   description: string
+  difficulty: string
   /** net vote score cached from API for Popular sort */
   net: number
 }
 
 type SortTab = 'latest' | 'popular'
+
+const DIFFICULTY_LEVELS = ['All', 'Beginner', 'Easy', 'Intermediate', 'Advanced', 'Expert'] as const
+type DifficultyFilter = typeof DIFFICULTY_LEVELS[number]
 
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
@@ -39,6 +44,7 @@ export function MissionHub() {
   const [missionList, setMissionList] = useState<MissionListItem[]>([])
   const [skillRows, setSkillRows] = useState<SkillRow[]>([])
   const [sortTab, setSortTab] = useState<SortTab>('latest')
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('All')
   const [search, setSearch] = useState('')
 
   /* ---------- fetch list + build flat skill rows ---------- */
@@ -60,6 +66,7 @@ export function MissionHub() {
             slug: m.slugs?.[i] || `${m.date}-skill-${i + 1}`,
             title: m.titles[i] || `Skill ${i + 1}`,
             description: m.descriptions[i] || '',
+            difficulty: m.difficulties?.[i] || '',
             net: 0,
           })
         }
@@ -105,22 +112,30 @@ export function MissionHub() {
   /* ---------- derived flat list ---------- */
 
   const filteredRows = useMemo(() => {
-    let rows = search.trim()
-      ? skillRows.filter(row => {
-          const q = search.toLowerCase()
-          return (
-            row.date.includes(q) ||
-            row.title.toLowerCase().includes(q) ||
-            row.description.toLowerCase().includes(q)
-          )
-        })
-      : [...skillRows]
+    let rows = [...skillRows]
+
+    // Difficulty filter
+    if (difficultyFilter !== 'All') {
+      rows = rows.filter(row =>
+        row.difficulty.toLowerCase().includes(difficultyFilter.toLowerCase())
+      )
+    }
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      rows = rows.filter(row =>
+        row.date.includes(q) ||
+        row.title.toLowerCase().includes(q) ||
+        row.description.toLowerCase().includes(q)
+      )
+    }
 
     if (sortTab === 'popular') {
       rows = rows.slice().sort((a, b) => b.net - a.net)
     }
     return rows
-  }, [skillRows, sortTab, search])
+  }, [skillRows, sortTab, difficultyFilter, search])
 
   /* ------------------------------------------------------------------ */
   /* RENDER                                                              */
@@ -146,6 +161,40 @@ export function MissionHub() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Difficulty filter pills */}
+      <div className="px-5 py-2.5 border-b border-gray-100 flex items-center gap-1.5 flex-wrap">
+        {DIFFICULTY_LEVELS.map((level) => {
+          const colors: Record<string, string> = {
+            All: 'bg-gray-100 text-gray-600',
+            Beginner: 'bg-green-100 text-green-700',
+            Easy: 'bg-blue-100 text-blue-700',
+            Intermediate: 'bg-yellow-100 text-yellow-700',
+            Advanced: 'bg-orange-100 text-orange-700',
+            Expert: 'bg-red-100 text-red-700',
+          }
+          const activeColors: Record<string, string> = {
+            All: 'bg-gray-800 text-white',
+            Beginner: 'bg-green-600 text-white',
+            Easy: 'bg-blue-600 text-white',
+            Intermediate: 'bg-yellow-500 text-white',
+            Advanced: 'bg-orange-500 text-white',
+            Expert: 'bg-red-600 text-white',
+          }
+          const isActive = difficultyFilter === level
+          return (
+            <button
+              key={level}
+              onClick={() => setDifficultyFilter(level)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                isActive ? activeColors[level] : colors[level] + ' hover:opacity-80'
+              }`}
+            >
+              {level}
+            </button>
+          )
+        })}
       </div>
 
       {/* Search */}
@@ -217,10 +266,25 @@ export function MissionHub() {
               onClick={() => router.push(`/skills/${row.slug}`)}
               className="flex-1 min-w-0 text-left"
             >
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <span className="font-medium text-sm text-gray-900 group-hover:text-violet-700 transition-colors truncate">
                   {row.title}
                 </span>
+                {row.difficulty && (() => {
+                  const pill: Record<string, string> = {
+                    beginner: 'bg-green-100 text-green-700',
+                    easy: 'bg-blue-100 text-blue-700',
+                    intermediate: 'bg-yellow-100 text-yellow-700',
+                    advanced: 'bg-orange-100 text-orange-700',
+                    expert: 'bg-red-100 text-red-700',
+                  }
+                  const key = Object.keys(pill).find(k => row.difficulty.toLowerCase().includes(k)) || ''
+                  return key ? (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${pill[key]}`}>
+                      {row.difficulty}
+                    </span>
+                  ) : null
+                })()}
               </div>
               {row.description && (
                 <p className="text-xs text-gray-500 leading-relaxed truncate">{row.description}</p>

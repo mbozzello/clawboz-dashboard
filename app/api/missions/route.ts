@@ -76,20 +76,23 @@ function parseMeta(filename: string, content: string) {
 
   const slugs = titles.map(t => `${date}-${slugify(t)}`)
 
-  // Extract a short description from each mission's "What You're Building" section
+  // Extract a short description and difficulty from each mission section
   const descriptions: string[] = []
+  const difficulties: string[] = []
   const missionSections = content.split(/^## Mission \d+:/gm).slice(1)
   for (const section of missionSections) {
-    // Look for ### ... What You're Building and grab the first non-empty line after it
+    // Description: first non-empty line after "What You're Building"
     const buildMatch = section.match(/###[^\n]*What You(?:'|')?re Building[^\n]*\n+([\s\S]*?)(?:\n###|\n##|$)/)
     if (buildMatch) {
       const raw = buildMatch[1].trim().split('\n').find(l => l.trim().length > 0) || ''
-      // Strip markdown bullets/bold markers
       descriptions.push(raw.replace(/^[-*]\s+/, '').replace(/\*\*/g, '').trim())
     } else {
       descriptions.push('')
     }
+    // Difficulty: extract from **📊 Difficulty:** line
+    const diffMatch = section.match(/\*\*.*?Difficulty:?\*\*\s*(.+)/i)
+    difficulties.push(diffMatch ? diffMatch[1].trim() : '')
   }
 
-  return { date, lessonCount, titles, slugs, descriptions }
+  return { date, lessonCount, titles, slugs, descriptions, difficulties }
 }
