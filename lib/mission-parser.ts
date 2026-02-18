@@ -143,10 +143,16 @@ function bulletList(body: string, start: string, end: string): string[] {
 }
 
 function parseSource(body: string): ParsedSource | null {
-  const m = body.match(/\*Inspired by:\s*(.+?)\*/)
+  const m = body.match(/\*Inspired by:\s*([\s\S]+?)\*/)
   if (!m) return null
 
   const raw = m[1].trim()
+
+  // Markdown link format: [label](url)
+  const mdLinkMatch = raw.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+  if (mdLinkMatch) {
+    return { label: mdLinkMatch[1].trim(), url: mdLinkMatch[2].trim() }
+  }
 
   const hnMatch = raw.match(/^HackerNews:\s*(.+)$/i)
   if (hnMatch) {
