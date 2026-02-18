@@ -8,14 +8,16 @@ function useCountdown() {
   useEffect(() => {
     function calc() {
       const now = new Date()
-      // Next midnight UTC
-      const next = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0, 0, 0, 0
-      ))
-      const diff = next.getTime() - now.getTime()
+      const msInDay = 86400000
+      const msIn12h = msInDay / 2
+      // Drops at 00:00 UTC and 12:00 UTC
+      const msSinceMidnightUTC =
+        now.getUTCHours() * 3600000 +
+        now.getUTCMinutes() * 60000 +
+        now.getUTCSeconds() * 1000 +
+        now.getUTCMilliseconds()
+      const msSinceLastDrop = msSinceMidnightUTC % msIn12h
+      const diff = msIn12h - msSinceLastDrop
       const h = Math.floor(diff / 3600000)
       const m = Math.floor((diff % 3600000) / 60000)
       const s = Math.floor((diff % 60000) / 1000)

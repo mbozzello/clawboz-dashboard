@@ -106,30 +106,43 @@ export function MissionHub() {
         }
       }
       setSkillRows(rows)
-
-      // Fetch vote scores for all skills so Popular sort works
-      // Use concurrent fetches with a small batch size to avoid rate limits
-      const updated = [...rows]
-      await Promise.all(
-        rows.map(async (row, rowIdx) => {
-          try {
-            const r = await fetch(`/api/votes?date=${row.date}&idx=${row.missionIdx}`)
-            if (r.ok) {
-              const d = await r.json()
-              updated[rowIdx] = { ...updated[rowIdx], net: d.net || 0 }
-            }
-          } catch {
-            // vote scores unavailable for this skill
-          }
-        })
-      )
-      setSkillRows(updated)
+      // Immediately fetch vote scores too
+      refreshVoteScores(rows)
     } catch (e) {
       console.error('Failed to fetch skill list', e)
     }
   }, [])
 
+  // Refresh net vote scores for all skill rows (used on mount + tab switch)
+  const refreshVoteScores = useCallback(async (rows?: SkillRow[]) => {
+    const source = rows || skillRows
+    if (source.length === 0) return
+    const updated = [...source]
+    await Promise.all(
+      source.map(async (row, rowIdx) => {
+        try {
+          const r = await fetch(`/api/votes?date=${row.date}&idx=${row.missionIdx}`)
+          if (r.ok) {
+            const d = await r.json()
+            updated[rowIdx] = { ...updated[rowIdx], net: d.net || 0 }
+          }
+        } catch {
+          // vote scores unavailable
+        }
+      })
+    )
+    setSkillRows(updated)
+  }, [skillRows])
+
   useEffect(() => { fetchList() }, [fetchList])
+
+  // Re-fetch vote scores when switching to Popular so the sort reflects latest votes
+  useEffect(() => {
+    if (sortTab === 'popular' && skillRows.length > 0) {
+      refreshVoteScores()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortTab])
 
   /* ---------- load detail ---------- */
 
