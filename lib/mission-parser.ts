@@ -173,6 +173,24 @@ function parseSource(body: string): ParsedSource | null {
     return { label: 'X', url: `https://x.com/search?q=${encodeURIComponent(term)}&src=typed_query` }
   }
 
+  // Bare owner/repo pattern (with optional " - description" suffix)
+  // e.g. "ruvnet/wifi-densepose - WiFi-based human pose estimation"
+  const bareRepoMatch = raw.match(/^([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\s*-\s*.+)?$/)
+  if (bareRepoMatch) {
+    const repo = bareRepoMatch[1].trim()
+    return { label: 'GitHub', url: `https://github.com/${repo}` }
+  }
+
+  // Bare name with " - description" → treat as a web product, Google it
+  // e.g. "Unblocked AI Code Review - context-aware PR reviews"
+  //      "Wispr Flow - 4x faster voice dictation tool"
+  const namedProductMatch = raw.match(/^(.+?)\s*-\s*.+$/)
+  if (namedProductMatch) {
+    const name = namedProductMatch[1].trim()
+    return { label: name, url: `https://www.google.com/search?q=${encodeURIComponent(name)}` }
+  }
+
+  // Final fallback — show as label with no link
   return { label: raw, url: '' }
 }
 

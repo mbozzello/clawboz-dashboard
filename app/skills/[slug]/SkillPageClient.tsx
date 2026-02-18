@@ -141,7 +141,7 @@ export function SkillPageClient({
 
                   {/* Markdown link */}
                   <a
-                    href={`?output=markdown`}
+                    href={`/api/skills/${mission.slug}/markdown`}
                     target="_blank"
                     rel="noopener noreferrer"
                     title="View raw markdown (for AI)"
