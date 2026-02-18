@@ -374,12 +374,15 @@ export async function voteSkill(
   date: string,
   missionIdx: number,
   voterId: string,
-  direction: 1 | -1
+  direction: 1 | -1,
+  toolId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const redis = getRedis()
-  const userKey = `votes:${date}:${missionIdx}:${voterId}`
-  const statsKey = `vote-score:${date}:${missionIdx}`
-  const member = `${date}:${missionIdx}`
+  const keyBase = toolId ? `repo:${toolId}` : `${date}:${missionIdx}`
+  const userKey = `votes:${keyBase}:${voterId}`
+  const statsKey = `vote-score:${keyBase}`
+  const member = keyBase
+  const sortedSetKey = toolId ? 'top-voted-tools' : 'top-voted-skills'
 
   const existing = await redis.get<string>(userKey)
   const existingVote = existing ? Number(existing) as (1 | -1) : 0
@@ -392,7 +395,7 @@ export async function voteSkill(
     } else {
       await redis.hincrby(statsKey, 'down', -1)
     }
-    await redis.zincrby('top-voted-skills', -direction, member)
+    await redis.zincrby(sortedSetKey, -direction, member)
   } else {
     // New vote or flip
     if (existingVote !== 0) {
@@ -402,7 +405,7 @@ export async function voteSkill(
       } else {
         await redis.hincrby(statsKey, 'down', -1)
       }
-      await redis.zincrby('top-voted-skills', -existingVote, member)
+      await redis.zincrby(sortedSetKey, -existingVote, member)
     }
     // Apply new vote
     await redis.set(userKey, String(direction))
@@ -411,7 +414,7 @@ export async function voteSkill(
     } else {
       await redis.hincrby(statsKey, 'down', 1)
     }
-    await redis.zincrby('top-voted-skills', direction, member)
+    await redis.zincrby(sortedSetKey, direction, member)
   }
 
   return { ok: true }
@@ -420,18 +423,20 @@ export async function voteSkill(
 export async function getSkillVotes(
   date: string,
   missionIdx: number,
-  voterId?: string
+  voterId?: string,
+  toolId?: string
 ): Promise<VoteStats> {
   try {
     const redis = getRedis()
-    const statsKey = `vote-score:${date}:${missionIdx}`
+    const keyBase = toolId ? `repo:${toolId}` : `${date}:${missionIdx}`
+    const statsKey = `vote-score:${keyBase}`
     const stats = await redis.hgetall(statsKey)
     const up = Math.max(0, Number(stats?.up || 0))
     const down = Math.max(0, Number(stats?.down || 0))
 
     let userVote: 1 | -1 | 0 = 0
     if (voterId) {
-      const userKey = `votes:${date}:${missionIdx}:${voterId}`
+      const userKey = `votes:${keyBase}:${voterId}`
       const uv = await redis.get<string>(userKey)
       if (uv) userVote = Number(uv) as (1 | -1)
     }

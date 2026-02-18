@@ -10,8 +10,10 @@ interface VoteStats {
 }
 
 interface VoteButtonsProps {
-  date: string
-  missionIdx: number
+  date?: string
+  missionIdx?: number
+  /** For repository tool votes — use instead of date/missionIdx */
+  toolId?: string
   /** compact = smaller buttons for list rows; default = full size for detail view */
   compact?: boolean
 }
@@ -26,7 +28,7 @@ function getVoterId(): string {
   return id
 }
 
-export function VoteButtons({ date, missionIdx, compact = false }: VoteButtonsProps) {
+export function VoteButtons({ date = '', missionIdx = 0, toolId, compact = false }: VoteButtonsProps) {
   const [stats, setStats] = useState<VoteStats>({ up: 0, down: 0, net: 0, userVote: 0 })
   const [loading, setLoading] = useState(true)
   // Mirror of stats in a ref so vote() can read current value synchronously
@@ -40,9 +42,10 @@ export function VoteButtons({ date, missionIdx, compact = false }: VoteButtonsPr
   const fetchVotes = useCallback(async () => {
     try {
       const voterId = getVoterId()
-      const res = await fetch(
-        `/api/votes?date=${encodeURIComponent(date)}&idx=${missionIdx}&voterId=${encodeURIComponent(voterId)}`
-      )
+      const qs = toolId
+        ? `toolId=${encodeURIComponent(toolId)}&voterId=${encodeURIComponent(voterId)}`
+        : `date=${encodeURIComponent(date)}&idx=${missionIdx}&voterId=${encodeURIComponent(voterId)}`
+      const res = await fetch(`/api/votes?${qs}`)
       if (res.ok) {
         const data: VoteStats = await res.json()
         setStats(data)
@@ -53,7 +56,7 @@ export function VoteButtons({ date, missionIdx, compact = false }: VoteButtonsPr
     } finally {
       setLoading(false)
     }
-  }, [date, missionIdx])
+  }, [date, missionIdx, toolId])
 
   useEffect(() => { fetchVotes() }, [fetchVotes])
 
@@ -97,7 +100,11 @@ export function VoteButtons({ date, missionIdx, compact = false }: VoteButtonsPr
       const res = await fetch('/api/votes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, missionIdx, direction, voterId }),
+        body: JSON.stringify(
+          toolId
+            ? { toolId, direction, voterId }
+            : { date, missionIdx, direction, voterId }
+        ),
       })
       if (res.ok) {
         const data: VoteStats = await res.json()

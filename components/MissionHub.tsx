@@ -35,6 +35,11 @@ interface ParsedStep {
   checklist: string[]
 }
 
+interface ParsedSource {
+  label: string
+  url: string
+}
+
 interface ParsedMission {
   index: number
   title: string
@@ -42,6 +47,7 @@ interface ParsedMission {
   difficulty: string
   tools: string
   description: string
+  source: ParsedSource | null
   youllBuild: string[]
   prerequisites: string[]
   steps: ParsedStep[]
@@ -374,6 +380,25 @@ export function MissionHub() {
         {/* Header */}
         <div className="px-6 pt-6 pb-5">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{mission.title}</h3>
+
+          {/* Source link */}
+          {mission.source && (
+            <p className="text-xs text-gray-400 mb-2">
+              Source:{' '}
+              {mission.source.url ? (
+                <a
+                  href={mission.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-violet-500 hover:text-violet-600 transition-colors"
+                >
+                  {mission.source.label} ↗
+                </a>
+              ) : (
+                <span>{mission.source.label}</span>
+              )}
+            </p>
+          )}
 
           {/* Meta badges */}
           <div className="flex flex-wrap gap-2 mb-4">

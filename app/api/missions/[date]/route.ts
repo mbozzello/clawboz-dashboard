@@ -50,6 +50,11 @@ interface ParsedStep {
   checklist: string[]
 }
 
+interface ParsedSource {
+  label: string
+  url: string
+}
+
 interface ParsedMission {
   index: number
   title: string
@@ -57,6 +62,7 @@ interface ParsedMission {
   difficulty: string
   tools: string
   description: string
+  source: ParsedSource | null
   youllBuild: string[]
   prerequisites: string[]
   steps: ParsedStep[]
@@ -81,6 +87,7 @@ function parseMissionMarkdown(content: string, date: string) {
     const descLines = descSection.split('\n').filter(l => l.trim() && !l.trim().startsWith('**'))
     const description = descLines.join(' ').trim()
 
+    const source = parseSource(body)
     const youllBuild = bulletList(body, "**You'll have:**", '###')
     const prerequisites = bulletList(body, '### ✅ Prerequisites', '###')
     const steps = parseSteps(body)
@@ -89,7 +96,7 @@ function parseMissionMarkdown(content: string, date: string) {
 
     missions.push({
       index, title, timeEstimate, difficulty, tools,
-      description, youllBuild, prerequisites, steps,
+      description, source, youllBuild, prerequisites, steps,
       successCriteria, nextSteps,
     })
   }
@@ -117,6 +124,45 @@ function bulletList(body: string, start: string, end: string): string[] {
     .split('\n')
     .filter(l => l.trim().startsWith('-'))
     .map(l => l.trim().replace(/^-\s*(\[.\]\s*)?/, '').trim())
+}
+
+function parseSource(body: string): ParsedSource | null {
+  // Match *Inspired by: Source: Title*
+  const m = body.match(/\*Inspired by:\s*(.+?)\*/)
+  if (!m) return null
+
+  const raw = m[1].trim()
+
+  // HackerNews: <title>
+  const hnMatch = raw.match(/^HackerNews:\s*(.+)$/i)
+  if (hnMatch) {
+    const title = hnMatch[1].trim()
+    return { label: 'HackerNews', url: `https://hn.algolia.com/?q=${encodeURIComponent(title)}` }
+  }
+
+  // GitHub Trending: owner/repo
+  const ghMatch = raw.match(/^GitHub Trending:\s*(.+)$/i)
+  if (ghMatch) {
+    const repo = ghMatch[1].trim()
+    return { label: 'GitHub', url: `https://github.com/${repo}` }
+  }
+
+  // Product Hunt: name
+  const phMatch = raw.match(/^Product Hunt:\s*(.+)$/i)
+  if (phMatch) {
+    const name = phMatch[1].trim()
+    return { label: 'Product Hunt', url: `https://www.producthunt.com/search?q=${encodeURIComponent(name)}` }
+  }
+
+  // X / Twitter
+  const xMatch = raw.match(/^X:\s*(.+)$/i)
+  if (xMatch) {
+    const term = xMatch[1].trim()
+    return { label: 'X', url: `https://x.com/search?q=${encodeURIComponent(term)}` }
+  }
+
+  // Fallback — just show the raw text as label, no link
+  return { label: raw, url: '' }
 }
 
 function parseSteps(body: string): ParsedStep[] {
