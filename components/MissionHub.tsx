@@ -268,9 +268,9 @@ export function MissionHub() {
             </div>
 
             {/* Skill info — navigates to dedicated page */}
-            <button
+            <div
+              className="flex-1 min-w-0 text-left cursor-pointer"
               onClick={() => router.push(`/skills/${row.slug}`)}
-              className="flex-1 min-w-0 text-left"
             >
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <span className="font-medium text-sm text-gray-900 group-hover:text-violet-700 transition-colors truncate">
@@ -307,7 +307,7 @@ export function MissionHub() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={e => e.stopPropagation()}
-                      className="ml-1.5 text-gray-400 italic hover:text-blue-400 transition-colors"
+                      className="ml-1.5 text-gray-400 italic hover:text-blue-400 transition-colors underline"
                     >
                       {row.source}
                     </a>
@@ -316,7 +316,7 @@ export function MissionHub() {
                   )
                 )}
               </p>
-            </button>
+            </div>
 
             {/* Chevron */}
             <button
